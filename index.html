@@ -264,12 +264,41 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="mh"></div>
   <div class="mt" id="m-ci-title">Check In</div>
   <input type="hidden" id="ci-key"/>
-  <p style="font-size:16px;color:var(--tx2);margin-bottom:14px;">Select classes for tonight.</p>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--bdr2);border-radius:9px;padding:13px 15px;margin-bottom:16px;">
+    <div>
+      <div style="font-size:16px;font-weight:600;color:var(--tx);">🔧 Test &amp; Tune night</div>
+      <div style="font-size:13px;color:var(--tx2);margin-top:2px;">Flat $15 instead of $20 + $10</div>
+    </div>
+    <label style="position:relative;display:inline-block;width:50px;height:28px;flex-shrink:0;">
+      <input type="checkbox" id="ci-tnt" style="opacity:0;width:0;height:0;"/>
+      <span id="ci-tnt-track" style="position:absolute;cursor:pointer;inset:0;background:var(--bg4);border-radius:28px;transition:.3s;border:1px solid var(--bdr2);"></span>
+      <span id="ci-tnt-knob" style="position:absolute;height:20px;width:20px;left:4px;top:4px;background:white;border-radius:50%;transition:.3s;pointer-events:none;"></span>
+    </label>
+  </div>
+
   <div class="fg">
-    <label>Classes *</label>
+    <label>Entry fee <span style="color:var(--tx3);font-weight:400;font-size:13px;">(auto-calculates)</span></label>
+    <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:2px solid var(--or);border-radius:9px;padding:13px 15px;">
+      <span style="font-size:16px;color:var(--tx2);font-weight:600;">$</span>
+      <input type="number" id="ci-fee" placeholder="0.00" min="0" step="0.01" style="flex:1;background:none;border:none;font-size:22px;font-weight:700;color:var(--or);outline:none;width:100%;font-family:inherit;"/>
+      <span style="font-size:12px;color:var(--tx3);text-align:right;line-height:1.4;" id="ci-fee-note"></span>
+    </div>
+  </div>
+
+  <div class="fg">
+    <label class="wtog" for="ci-paid" style="display:flex;align-items:center;gap:13px;background:var(--bg3);border:1px solid var(--bdr2);border-radius:9px;padding:14px 15px;cursor:pointer;width:100%;">
+      <input type="checkbox" id="ci-paid" style="width:21px;height:21px;accent-color:var(--gn);flex-shrink:0;cursor:pointer;"/>
+      <div><div style="font-size:16px;font-weight:600;color:var(--tx);">💵 Entry fee paid</div><div style="font-size:13px;color:var(--tx2);margin-top:2px;">Check when cash is collected</div></div>
+    </label>
+  </div>
+
+  <div class="fg">
+    <label>Classes tonight *</label>
     <div class="cgrid" id="ci-cgrid"></div>
     <div class="owrap" id="ci-owrap"><input type="text" id="ci-oval" placeholder="Class name…"/></div>
   </div>
+
   <div class="mac">
     <button class="bbig gh" id="ci-cancel">Cancel</button>
     <button class="bbig" id="ci-confirm">Check In</button>
@@ -424,6 +453,7 @@ function saveProfile(){
 
 // ── CHECKIN MODAL ──────────────────────────────────────────────
 document.getElementById("ci-cancel").addEventListener("click", function(){ document.getElementById("m-checkin").classList.add("hide"); });
+document.getElementById("ci-tnt").addEventListener("change", calcFee);
 document.getElementById("ci-confirm").addEventListener("click", confirmCheckin);
 
 function openCheckin(key){
