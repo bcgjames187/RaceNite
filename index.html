@@ -133,7 +133,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
 .sb.pending{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:#fbbf24;}
 .sb.making{background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.3);color:var(--bl);}
 .sb.ready{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--gn);}
-.sb.delivered{background:rgba(255,255,255,.04);border-color:var(--bdr2);color:var(--tx3);}
+.sb.delivered{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#f87171;}
 
 .fr{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;}
 .fb{padding:7px 13px;border-radius:20px;font-size:14px;font-weight:600;border:1px solid var(--bdr2);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:inherit;}
@@ -431,7 +431,54 @@ function openCheckin(key){
   document.getElementById("m-ci-title").textContent = "Check In — "+p.name;
   document.getElementById("ci-key").value = key;
   buildGrid("ci-cgrid","ci-owrap","ci-oval",p.classes||[]);
+  document.getElementById("ci-fee").value = "";
+  document.getElementById("ci-paid").checked = false;
+  document.getElementById("ci-tnt").checked = false;
+  var slider = document.getElementById("ci-tnt-slider");
+  var knob = document.getElementById("ci-tnt-knob");
+  if(slider) slider.style.background = "var(--bg4)";
+  if(knob) knob.style.transform = "translateX(0)";
+  setTimeout(calcFee, 50);
   document.getElementById("m-checkin").classList.remove("hide");
+}
+
+function calcFee(){
+  // Only run when checkin modal is open
+  var feeEl = document.getElementById("ci-fee");
+  var breakEl = document.getElementById("ci-fee-breakdown");
+  var tnt = document.getElementById("ci-tnt");
+  if(!feeEl || !tnt) return;
+
+  // Count selected classes in ci-cgrid
+  var checked = document.querySelectorAll("#ci-cgrid input[type=checkbox]:checked");
+  var count = checked.length;
+
+  // Update T&T toggle visual
+  var slider = document.getElementById("ci-tnt-slider");
+  var knob = document.getElementById("ci-tnt-knob");
+  if(tnt.checked){
+    slider.style.background = "var(--gn)";
+    knob.style.transform = "translateX(20px)";
+  } else {
+    slider.style.background = "var(--bg4)";
+    knob.style.transform = "translateX(0)";
+  }
+
+  var fee = 0;
+  var breakdown = "";
+  if(count === 0){
+    fee = 0;
+    breakdown = "";
+  } else if(tnt.checked){
+    fee = 15;
+    breakdown = "T&T flat $15";
+  } else {
+    fee = 20 + (count - 1) * 10;
+    breakdown = count === 1 ? "1 class $20" : "1st $20 + "+(count-1)+" more × $10";
+  }
+
+  feeEl.value = fee > 0 ? fee.toFixed(2) : "";
+  if(breakEl) breakEl.textContent = breakdown;
 }
 
 function confirmCheckin(){
@@ -439,8 +486,11 @@ function confirmCheckin(){
   var p = profiles[key]; if(!p) return;
   var classes = getClasses("ci-cgrid","ci-oval");
   if(!classes.length){ toast("Select at least one class"); return; }
+  var fee = parseFloat(document.getElementById("ci-fee").value)||0;
+  var paid = document.getElementById("ci-paid").checked;
+  var tnt = document.getElementById("ci-tnt").checked;
   db.ref("checkins/"+key).set({
-    name:p.name, classes:classes,
+    name:p.name, classes:classes, fee:fee, paid:paid, tnt:tnt,
     time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),
     ts:Date.now()
   });
@@ -465,7 +515,7 @@ function buildGrid(gridId, wrapId, valId, selected){
     cb.type = "checkbox";
     cb.value = c;
     if(selected.indexOf(c)!==-1) cb.checked = true;
-    cb.addEventListener("change", function(){ lbl.classList.toggle("sel",cb.checked); });
+    cb.addEventListener("change", function(){ lbl.classList.toggle("sel",cb.checked); calcFee(); });
     lbl.appendChild(cb);
     lbl.appendChild(document.createTextNode(" "+c));
     grid.appendChild(lbl);
@@ -481,6 +531,7 @@ function buildGrid(gridId, wrapId, valId, selected){
   othCb.addEventListener("change", function(){
     othLbl.classList.toggle("sel",othCb.checked);
     wrap.style.display = othCb.checked ? "block" : "none";
+    calcFee();
   });
   othLbl.appendChild(othCb);
   othLbl.appendChild(document.createTextNode(" Other"));
@@ -565,10 +616,10 @@ function drawTonight(){
       '<div class="cr">' +
         '<div>' +
           '<div class="cn">'+ci2.name+(p.carnum?' <span class="cnum">#'+p.carnum+'</span>':'')+'</div>' +
-          '<div class="cm">'+(p.transponder?'<span>📡 '+p.transponder+'</span>':'')+'<span>🕐 '+ci2.time+'</span></div>' +
+          '<div class="cm">'+(p.transponder?'<span>📡 '+p.transponder+'</span>':'')+'<span>🕐 '+ci2.time+'</span>'+(ci2.fee?'<span>'+(ci2.paid?'💵 $'+ci2.fee.toFixed(2)+' paid':'⚠️ $'+ci2.fee.toFixed(2)+' unpaid')+'</span>':'')+'</div>' +
           '<div class="tags">'+(ci2.classes||[]).map(function(c){ return '<span class="tag tc">'+c+'</span>'; }).join("")+'</div>' +
         '</div>' +
-        '<div class="bgs">'+(wok?'<span class="tag tok">✓ Waiver</span>':'<span class="tag tno">No Waiver</span>')+'</div>' +
+        '<div class="bgs">'+(wok?'<span class="tag tok">✓ Waiver</span>':'<span class="tag tno">No Waiver</span>')+(ci2.fee&&!ci2.paid?'<span class="tag tno">💵 Unpaid</span>':'')+'</div>' +
       '</div>' +
       '<div class="ca"></div>';
     var removeBtn = document.createElement("button");
@@ -672,7 +723,7 @@ function drawRacers(){
 
 function drawOrders(){
   var entries=Object.entries(orders).sort(function(a,b){ return (a[1].ts||0)-(b[1].ts||0); });
-  var filtered=filt==="all"?entries:entries.filter(function(e){ return e[1].status===filt; });
+  var filtered=filt==="all"?entries.filter(function(e){ return e[1].status!=="delivered"; }):entries.filter(function(e){ return e[1].status===filt; });
   document.getElementById("d-qct").textContent=filtered.length+" order"+(filtered.length!==1?"s":"");
   var el=document.getElementById("d-orders");
   if(!filtered.length){ el.innerHTML='<div class="empty">No orders here.</div>'; return; }
