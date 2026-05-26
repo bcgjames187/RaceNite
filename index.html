@@ -265,25 +265,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="mt" id="m-ci-title">Check In</div>
   <input type="hidden" id="ci-key"/>
 
-  <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--bdr2);border-radius:9px;padding:13px 15px;margin-bottom:16px;">
-    <div>
-      <div style="font-size:16px;font-weight:600;color:var(--tx);">🔧 Test &amp; Tune night</div>
-      <div style="font-size:13px;color:var(--tx2);margin-top:2px;">Flat $15 instead of $20 + $10</div>
+  <div class="fg">
+    <label>Night type</label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button type="button" id="btn-race" onclick="setNightType(false)" style="padding:12px;border-radius:9px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:2px solid var(--or);background:var(--or);color:#fff;transition:all .15s;">🏁 Race Night</button>
+      <button type="button" id="btn-tnt" onclick="setNightType(true)" style="padding:12px;border-radius:9px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:2px solid var(--bdr2);background:var(--bg3);color:var(--tx2);transition:all .15s;">🔧 Test &amp; Tune</button>
     </div>
-    <label style="position:relative;display:inline-block;width:50px;height:28px;flex-shrink:0;">
-      <input type="checkbox" id="ci-tnt" style="opacity:0;width:0;height:0;"/>
-      <span id="ci-tnt-track" style="position:absolute;cursor:pointer;inset:0;background:var(--bg4);border-radius:28px;transition:.3s;border:1px solid var(--bdr2);"></span>
-      <span id="ci-tnt-knob" style="position:absolute;height:20px;width:20px;left:4px;top:4px;background:white;border-radius:50%;transition:.3s;pointer-events:none;"></span>
-    </label>
+    <div style="font-size:12px;color:var(--tx3);margin-top:6px;text-align:center;" id="ci-night-note">Race night: $20 first class · $10 each additional</div>
   </div>
 
   <div class="fg">
-    <label>Entry fee <span style="color:var(--tx3);font-weight:400;font-size:13px;">(auto-calculates)</span></label>
-    <div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:2px solid var(--or);border-radius:9px;padding:13px 15px;">
-      <span style="font-size:16px;color:var(--tx2);font-weight:600;">$</span>
-      <input type="number" id="ci-fee" placeholder="0.00" min="0" step="0.01" style="flex:1;background:none;border:none;font-size:22px;font-weight:700;color:var(--or);outline:none;width:100%;font-family:inherit;"/>
-      <span style="font-size:12px;color:var(--tx3);text-align:right;line-height:1.4;" id="ci-fee-note"></span>
+    <label>Entry fee <span style="color:var(--tx3);font-weight:400;font-size:13px;">(tap to adjust if needed)</span></label>
+    <div style="background:var(--or);border-radius:9px;padding:16px;text-align:center;">
+      <div style="font-size:38px;font-weight:700;color:#fff;line-height:1;" id="ci-fee-display">$0.00</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px;" id="ci-fee-note"></div>
     </div>
+    <input type="hidden" id="ci-fee" value="0"/>
   </div>
 
   <div class="fg">
@@ -453,7 +450,7 @@ function saveProfile(){
 
 // ── CHECKIN MODAL ──────────────────────────────────────────────
 document.getElementById("ci-cancel").addEventListener("click", function(){ document.getElementById("m-checkin").classList.add("hide"); });
-document.getElementById("ci-tnt").addEventListener("change", calcFee);
+// T&T now uses onclick buttons
 document.getElementById("ci-confirm").addEventListener("click", confirmCheckin);
 
 function openCheckin(key){
@@ -461,18 +458,14 @@ function openCheckin(key){
   document.getElementById("m-ci-title").textContent = "Check In — "+p.name;
   document.getElementById("ci-key").value = key;
   buildGrid("ci-cgrid","ci-owrap","ci-oval",p.classes||[]);
-  document.getElementById("ci-fee").value = "";
   document.getElementById("ci-paid").checked = false;
-  document.getElementById("ci-tnt").checked = false;
-  var slider = document.getElementById("ci-tnt-slider");
-  var knob = document.getElementById("ci-tnt-knob");
-  if(slider) slider.style.background = "var(--bg4)";
-  if(knob) knob.style.transform = "translateX(0)";
-  setTimeout(calcFee, 50);
+  isTnT = false;
+  setTimeout(function(){ setNightType(false); calcFee(); }, 50);
   document.getElementById("m-checkin").classList.remove("hide");
 }
 
-function calcFee(){
+// calcFee replaced below
+function calcFeeOLD(){
   // Only run when checkin modal is open
   var feeEl = document.getElementById("ci-fee");
   var breakEl = document.getElementById("ci-fee-breakdown");
@@ -511,6 +504,48 @@ function calcFee(){
   if(breakEl) breakEl.textContent = breakdown;
 }
 
+
+var isTnT = false;
+
+function setNightType(tnt){
+  isTnT = tnt;
+  var raceBtn = document.getElementById("btn-race");
+  var tntBtn  = document.getElementById("btn-tnt");
+  var noteEl  = document.getElementById("ci-night-note");
+  if(raceBtn && tntBtn){
+    if(tnt){
+      raceBtn.style.background="var(--bg3)"; raceBtn.style.color="var(--tx2)"; raceBtn.style.borderColor="var(--bdr2)";
+      tntBtn.style.background="var(--gn)";   tntBtn.style.color="#fff";         tntBtn.style.borderColor="var(--gn)";
+      if(noteEl) noteEl.textContent="Test & Tune: flat $15 per racer";
+    } else {
+      raceBtn.style.background="var(--or)"; raceBtn.style.color="#fff"; raceBtn.style.borderColor="var(--or)";
+      tntBtn.style.background="var(--bg3)"; tntBtn.style.color="var(--tx2)"; tntBtn.style.borderColor="var(--bdr2)";
+      if(noteEl) noteEl.textContent="Race night: $20 first class · $10 each additional";
+    }
+  }
+  calcFee();
+}
+
+function calcFee(){
+  var feeInput = document.getElementById("ci-fee");
+  var feeDisplay = document.getElementById("ci-fee-display");
+  var noteEl = document.getElementById("ci-fee-note");
+  if(!feeInput || !feeDisplay) return;
+  var checked = document.querySelectorAll("#ci-cgrid input[type=checkbox]:checked").length;
+  var fee = 0, note = "";
+  if(checked === 0){
+    fee = 0; note = "Select a class above";
+  } else if(isTnT){
+    fee = 15; note = "Test & Tune flat rate";
+  } else {
+    fee = 20 + (checked - 1) * 10;
+    note = checked === 1 ? "1 class · $20.00" : "1st class $20 + " + (checked-1) + " more × $10";
+  }
+  feeInput.value = fee;
+  feeDisplay.textContent = "$" + fee.toFixed(2);
+  if(noteEl) noteEl.textContent = note;
+}
+
 function confirmCheckin(){
   var key = document.getElementById("ci-key").value;
   var p = profiles[key]; if(!p) return;
@@ -518,7 +553,7 @@ function confirmCheckin(){
   if(!classes.length){ toast("Select at least one class"); return; }
   var fee = parseFloat(document.getElementById("ci-fee").value)||0;
   var paid = document.getElementById("ci-paid").checked;
-  var tnt = document.getElementById("ci-tnt").checked;
+  var tnt = isTnT;
   db.ref("checkins/"+key).set({
     name:p.name, classes:classes, fee:fee, paid:paid, tnt:tnt,
     time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),
