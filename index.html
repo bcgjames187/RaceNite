@@ -268,8 +268,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg
   <div class="fg">
     <label>Night type</label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <button type="button" id="btn-race" onclick="setNightType(false)" style="padding:12px;border-radius:9px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:2px solid var(--or);background:var(--or);color:#fff;transition:all .15s;">🏁 Race Night</button>
-      <button type="button" id="btn-tnt" onclick="setNightType(true)" style="padding:12px;border-radius:9px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:2px solid var(--bdr2);background:var(--bg3);color:var(--tx2);transition:all .15s;">🔧 Test &amp; Tune</button>
+      <button type="button" id="btn-race" style="padding:12px;border-radius:9px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:2px solid var(--or);background:var(--or);color:#fff;transition:all .15s;">🏁 Race Night</button>
+      <button type="button" id="btn-tnt" style="padding:12px;border-radius:9px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:2px solid var(--bdr2);background:var(--bg3);color:var(--tx2);transition:all .15s;">🔧 Test &amp; Tune</button>
     </div>
     <div style="font-size:12px;color:var(--tx3);margin-top:6px;text-align:center;" id="ci-night-note">Race night: $20 first class · $10 each additional</div>
   </div>
@@ -525,6 +525,10 @@ function setNightType(tnt){
   }
   calcFee();
 }
+
+// Wire up night type buttons inside the JS scope
+document.getElementById("btn-race").addEventListener("click", function(){ setNightType(false); });
+document.getElementById("btn-tnt").addEventListener("click", function(){ setNightType(true); });
 
 function calcFee(){
   var feeInput = document.getElementById("ci-fee");
